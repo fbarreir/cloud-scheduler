@@ -33,6 +33,7 @@ from decimal import *
 from lxml import etree
 from StringIO import StringIO
 from collections import defaultdict
+from stratuslab.Image import Image
 
 try:
     import cPickle as pickle
@@ -40,6 +41,7 @@ except:
     import pickle
 
 import cluster_tools
+import stratuslabcluster
 import cloudscheduler.config as config
 
 from cloudscheduler.utilities import determine_path
@@ -309,6 +311,25 @@ class ResourcePool:
                     key_name = get_or_none(config, cluster, "key_name"),
                     )
 
+        elif cloud_type == "StratusLab":
+            return stratuslabcluster.StratusLabCluster(name = cluster,
+                    host = get_or_none(config, cluster, "host"),
+                    cloud_type = get_or_none(config, cluster, "cloud_type"),
+                    memory = map(int, splitnstrip(",", get_or_none(config, cluster, "memory"))),
+                    max_vm_mem = max_vm_mem if max_vm_mem != None else -1,
+                    cpu_archs = splitnstrip(",", get_or_none(config, cluster, "cpu_archs")),
+                    networks = splitnstrip(",", get_or_none(config, cluster, "networks")),
+                    vm_slots = int(get_or_none(config, cluster, "vm_slots")),
+                    cpu_cores = int(get_or_none(config, cluster, "cpu_cores")),
+                    storage = int(get_or_none(config, cluster, "storage")),
+                    #access_key_id = get_or_none(config, cluster, "access_key_id"),
+                    #secret_access_key = get_or_none(config, cluster, "secret_access_key"),
+                    #security_group = get_or_none(config, cluster, "security_group"),
+                    hypervisor = hypervisor,
+                    #key_name = get_or_none(config, cluster, "key_name"),
+                    contextualization = get_or_none(config, cluster, "contextualization"),
+                    )
+
         else:
             log.error("ResourcePool.setup doesn't know what to do with the"
                     + "%s cloud_type" % cloud_type)
@@ -435,6 +456,7 @@ class ResourcePool:
         else:
             clusters = self.resources
         for cluster in clusters:
+            log.verbose("Trying with cluster " + str(cluster) + "\n(Name: " + cluster.__class__.__name__ + ")")
             if not cluster.enabled:
                 continue
             if cluster.hypervisor not in hypervisor:
@@ -466,6 +488,17 @@ class ResourcePool:
                 if ami in self.banned_job_resource.keys():
                     if cluster.name in self.banned_job_resource[ami]:
                         continue
+            
+            elif cluster.__class__.__name__ == "StratusLabCluster":
+                # If not valid image file
+                if imageloc == "":
+                    continue
+                if imageloc in self.banned_job_resource.keys():
+                    if cluster.name in self.banned_job_resource[imageloc]:
+                        continue
+                if (not Image.isDiskId(imageloc)) and (not Image.isImageId(imageloc)):
+                    continue
+            
             # If the cluster has no open VM slots
             if (cluster.vm_slots <= 0):
                 log.verbose("get_fitting_resources - No free slots in %s" % cluster.name)
@@ -1222,6 +1255,15 @@ class ResourcePool:
                     queue = ErrTrackQueue(cluster.name)
                     queue.append(value)
                     self.failures[job.req_imageloc].append(queue)
+
+            elif cluster.__class__.__name__ == 'StratusLabCluster':
+                # If not valid image file to download
+                if imageloc == "":
+                    continue
+                if (not Image.isDiskId(imageloc)) and (not Image.isImageId(imageloc)):
+                    continue
+                resource.append(value)
+
             elif cluster.__class__.__name__ == 'EC2Cluster':
                 if job.req_ami in self.failures.keys():
                     foundIt = False
