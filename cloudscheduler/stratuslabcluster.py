@@ -81,7 +81,7 @@ class StratusLabCluster(cluster_tools.ICluster):
                 s = f.read()
                 StratusLabCluster._v_configHolder.set('extraContextData', 'EC2_USER_DATA=' + base64.standard_b64encode(s))
             except:
-                log.debug('Contextualization file \'' + str(contextualization) + '\' is not valid. Proceding without contextualization...')
+                log.debug("Contextualization file '%s' is not valid. Proceeding without contextualization..." % str(contextualization) )
 
         self.__runnerIds = {}
             
@@ -91,7 +91,7 @@ class StratusLabCluster(cluster_tools.ICluster):
             myproxy_server_port=None, job_per_core=False, proxy_non_boot=False,
             vmimage_proxy_file=None, vmimage_proxy_file_path=None, vm_loc=''):
 
-        log.debug("Running new instance with Marketplace id " + str(vm_loc) + " in StratusLab")
+        log.debug("Running new instance with Marketplace id %s in StratusLab" % str(vm_loc))
         runner = None
         if vm_loc not in StratusLabCluster.__idMap:
             runner = Runner(vm_loc, StratusLabCluster._v_configHolder) #vm_loc: URL of VM or key? Does not seem to matter in Runner (l. 506)
@@ -100,28 +100,28 @@ class StratusLabCluster(cluster_tools.ICluster):
             runner = StratusLabCluster.__idMap[vm_loc]
         try:
             ids = runner.runInstance()
-            log.debug("Created instances: " + str(ids))
-            for new_id in ids:
-                new_vm = cluster_tools.VM(name = vm_name, id = str(new_id), vmtype = vm_type, user = vm_user,
-                    network = vm_networkassoc,
-                    cpuarch = vm_cpuarch, image = vm_image,
-                    memory = vm_mem, cpucores = vm_cores,
-                    storage = vm_storage, keep_alive = vm_keepalive, 
-                    myproxy_creds_name = myproxy_creds_name, myproxy_server = myproxy_server, 
-                    myproxy_server_port = myproxy_server_port, job_per_core = job_per_core)
-                StratusLabCluster.__vmMap[str(new_id)] = vm_loc
-                if vm_loc not in self.__runnerIds:
-                    self.__runnerIds[vm_loc] = [str(new_id),]
-                else:
-                    self.__runnerIds[vm_loc].append(str(new_id))
-
-                self.vms.append(new_vm)
-
-                try:
-                    self.resource_checkout(new_vm)
-                except:
-                    log.exception("Unexpected error checking out resources when creating a VM. Programming error?")
-                    return self.ERROR
+            log.debug("Created instances: %s" % str(ids))
+            #for new_id in ids:
+            new_id = ids[len(ids) - 1]
+            new_vm = cluster_tools.VM(name = vm_name, id = str(new_id), vmtype = vm_type, user = vm_user,
+                network = vm_networkassoc,
+                cpuarch = vm_cpuarch, image = vm_image,
+                memory = vm_mem, cpucores = vm_cores,
+                storage = vm_storage, keep_alive = vm_keepalive, 
+                myproxy_creds_name = myproxy_creds_name, myproxy_server = myproxy_server, 
+                myproxy_server_port = myproxy_server_port, job_per_core = job_per_core)
+            StratusLabCluster.__vmMap[str(new_id)] = vm_loc
+            if vm_loc not in self.__runnerIds:
+                self.__runnerIds[vm_loc] = [str(new_id),]
+            else:
+                self.__runnerIds[vm_loc].append(str(new_id))
+            self.vms.append(new_vm)
+            try:
+                self.resource_checkout(new_vm)
+            except:
+                log.exception("Unexpected error checking out resources when creating a VM. Programming error?")
+                return self.ERROR
+            #endfor
             return 0
         except Exception, e:
             log.debug("Exception running new instance in StratusLab: " + str(e))
@@ -130,7 +130,7 @@ class StratusLabCluster(cluster_tools.ICluster):
             return -1
 
     def __cleanKill(self, vm, return_resources=True):
-        log.verbose('Cleaning caches for VM with id ' + str(vm.id))
+        log.verbose('Cleaning caches for VM with id %s' % str(vm.id))
         if return_resources:
             self.resource_return(vm)
         with self.vms_lock:
@@ -148,7 +148,7 @@ class StratusLabCluster(cluster_tools.ICluster):
                 log.verbose("Attempted to remove already removed VM id")
 
     def __vm_kill(self, vm, runner, clean=False, return_resources=True):
-        log.debug("Send kill signal to VM " + str(vm.id) + " in StratusLab")
+        log.debug("Send kill signal to VM %s in StratusLab" % str(vm.id))
         try:
             runner.killInstances([int(vm.id)])
         finally:
@@ -156,37 +156,37 @@ class StratusLabCluster(cluster_tools.ICluster):
                 self.__cleanKill(vm, return_resources)
     
     def vm_destroy(self, vm, return_resources=True, reason=""):
-        log.debug("Send shutdown signal to VM " + str(vm.id) + " in StratusLab")
+        log.debug("Send shutdown signal to VM %s in StratusLab" % str(vm.id))
         if len(reason) > 0:
-            log.debug("Reason: " + reason)
+            log.debug("Reason: %s" % reason)
         try:
             StratusLabCluster.__idMap[StratusLabCluster.__vmMap[vm.id]].shutdownInstances([int(vm.id)])
             t = threading._Timer(StratusLabCluster.VM_SHUTDOWN, self.__vm_kill, args=[vm, StratusLabCluster.__idMap[StratusLabCluster.__vmMap[vm.id]]])
-            log.debug("Waiting in new thread " + str(StratusLabCluster.VM_SHUTDOWN) + "s to send kill signal to VM " + str(vm.id) + " in StratusLab")
+            log.debug("Waiting in new thread %s to send kill signal to VM %s in StratusLab" % (str(StratusLabCluster.VM_SHUTDOWN), str(vm.id)))
             t.start()
             self.__cleanKill(vm, return_resources)
             return 0
         except:
-            log.debug("VM with id " + str(vm.id) + " shutdown error in StratusLab")
+            log.debug("VM with id %s shutdown error in StratusLab" % str(vm.id))
             #import traceback
             #traceback.print_exc()
             try:
                 self.__vm_kill(vm, StratusLabCluster.__idMap[StratusLabCluster.__vmMap[vm.id]], clean=True, return_resources=return_resources)
-                log.debug("Managed to kill VM with id " + str(vm.id) + " in StratusLab")
+                log.debug("Managed to kill VM with id %s in StratusLab" % str(vm.id))
                 return 0
             except:
                 retry = 3
                 while retry > 0:
-                    log.debug("Error seding kill signal to VM with id " + str(vm.id) + ", " + str(retry) + " trials remaining. Retrying...")
+                    log.debug("Error sending kill signal to VM with id %s, %s trials remaining. Retrying..." % (str(vm.id), str(retry)))
                     time.sleep(5)
                     try:
                         self.__vm_kill(vm, StratusLabCluster.__idMap[StratusLabCluster.__vmMap[vm.id]], clean=True, return_resources=return_resources)
-                        log.debug("Managed to kill VM with id " + str(vm.id) + " in StratusLab")
+                        log.debug("Managed to kill VM with id %s in StratusLab" % str(vm.id))
                         return 0
                     except:
                         pass
                     retry -= 1
-                log.debug("No way, can't destroy VM with id " + str(vm.id) + " in StratusLab. Maybe already destroyed, cleaning...")
+                log.debug("No way, can't destroy VM with id %s in StratusLab. Maybe already destroyed, cleaning..." % str(vm.id))
                 self.__cleanKill(vm,False)
                 #traceback.print_exc()
                 return -1
@@ -197,20 +197,20 @@ class StratusLabCluster(cluster_tools.ICluster):
                 new_status = self.VM_STATES.get(StratusLabCluster.__idMap[StratusLabCluster.__vmMap[vm.id]].getVmState(int(vm.id)).upper(), 'Error')
                 if vm.status != new_status:
                         vm.last_state_change = int(time.time())
-                        log.debug("VM: " + str(vm.id) + " on %s. Changed from %s to %s." % (self.name, vm.status, new_status))
+                        log.debug("VM: %s on %s. Changed from %s to %s." % (str(vm.id), self.name, vm.status, new_status))
                         vm.status = new_status
                 elif vm.override_status != None and new_status:
-                        log.debug("New status for VM " + str(vm.id) + ", override status")
+                        log.debug("New status for VM %s, override status" % str(vm.id))
                         vm.override_status = None
                         vm.errorconnect = None
 
             vm.lastpoll = int(time.time())
             return new_status
         except OneException, e:
-            log.debug("One exception: " + str(e))
+            log.debug("One exception: %s" % str(e))
             return 'shutdown'
         except Exception, e:
-            log.debug("Unknown exception: " + str(e))
+            log.debug("Unknown exception: %s" % str(e))
             return 'unknown'
 
     def __getstate__(self):

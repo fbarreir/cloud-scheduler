@@ -456,7 +456,7 @@ class ResourcePool:
         else:
             clusters = self.resources
         for cluster in clusters:
-            log.verbose("Trying with cluster " + str(cluster) + "\n(Name: " + cluster.__class__.__name__ + ")")
+            log.verbose("Trying with cluster %s (Name: %s)" % (str(cluster), cluster.class.name))
             if not cluster.enabled:
                 continue
             if cluster.hypervisor not in hypervisor:
