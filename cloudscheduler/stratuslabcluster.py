@@ -79,7 +79,7 @@ class StratusLabCluster(cluster_tools.ICluster):
             try:
                 f = open(contextualization, 'r')
                 s = f.read()
-                StratusLabCluster._v_configHolder.set('extraContextData', 'EC2_USER_DATA=' + base64.standard_b64encode(s))
+                StratusLabCluster._v_configHolder.set('extraContextData', 'EC2_USER_DATA=%s' %base64.standard_b64encode(s))
             except:
                 log.debug("Contextualization file '%s' is not valid. Proceeding without contextualization..." % str(contextualization) )
 
@@ -124,7 +124,7 @@ class StratusLabCluster(cluster_tools.ICluster):
             #endfor
             return 0
         except Exception, e:
-            log.debug("Exception running new instance in StratusLab: " + str(e))
+            log.debug("Exception running new instance in StratusLab: %s" %str(e))
             #import traceback
             #traceback.print_exc()
             return -1
