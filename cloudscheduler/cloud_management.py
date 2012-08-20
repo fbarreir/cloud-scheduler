@@ -33,7 +33,6 @@ from decimal import *
 from lxml import etree
 from StringIO import StringIO
 from collections import defaultdict
-from stratuslab.Image import Image
 
 try:
     import cPickle as pickle
@@ -62,6 +61,15 @@ log = logging.getLogger("cloudscheduler")
 
 
 class ResourcePool:
+    
+    """Verify if stratuslab dependencies are available"""
+    try:
+        from stratuslab.Image import Image
+        __stratuslab_support = True
+    except ImportError:
+        __stratuslab_support = False
+        log.warning("Stratuslab dependencies are not available")
+    
     """Stores and organises a list of Cluster resources."""
     ## Instance variables
     resources = []
@@ -311,7 +319,7 @@ class ResourcePool:
                     key_name = get_or_none(config, cluster, "key_name"),
                     )
 
-        elif cloud_type == "StratusLab":
+        elif cloud_type == "StratusLab" and self.__stratuslab_support:
             return stratuslabcluster.StratusLabCluster(name = cluster,
                     host = get_or_none(config, cluster, "host"),
                     cloud_type = get_or_none(config, cluster, "cloud_type"),
@@ -322,12 +330,8 @@ class ResourcePool:
                     vm_slots = int(get_or_none(config, cluster, "vm_slots")),
                     cpu_cores = int(get_or_none(config, cluster, "cpu_cores")),
                     storage = int(get_or_none(config, cluster, "storage")),
-                    #access_key_id = get_or_none(config, cluster, "access_key_id"),
-                    #secret_access_key = get_or_none(config, cluster, "secret_access_key"),
-                    #security_group = get_or_none(config, cluster, "security_group"),
                     hypervisor = hypervisor,
-                    #key_name = get_or_none(config, cluster, "key_name"),
-                    contextualization = get_or_none(config, cluster, "contextualization"),
+                    contextualization = get_or_none(config, cluster, "contextualization")
                     )
 
         else:
@@ -489,7 +493,7 @@ class ResourcePool:
                     if cluster.name in self.banned_job_resource[ami]:
                         continue
             
-            elif cluster.__class__.__name__ == "StratusLabCluster":
+            elif cluster.__class__.__name__ == "StratusLabCluster" and self.__stratuslab_support:
                 # If not valid image file
                 if imageloc == "":
                     continue
@@ -1256,7 +1260,7 @@ class ResourcePool:
                     queue.append(value)
                     self.failures[job.req_imageloc].append(queue)
 
-            elif cluster.__class__.__name__ == 'StratusLabCluster':
+            elif cluster.__class__.__name__ == 'StratusLabCluster' and self.__stratuslab_support:
                 # If not valid image file to download
                 if imageloc == "":
                     continue
