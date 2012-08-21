@@ -90,11 +90,10 @@ class ResourcePool:
         global log
         log = logging.getLogger("cloudscheduler")
 
-        log.verbose("New ResourcePool " + name + " created")
+        log.verbose("New ResourcePool %s created" %name)
         self.name = name
 
-        _collector_wsdl = "file://" + determine_path() \
-                          + "/wsdl/condorCollector.wsdl"
+        _collector_wsdl = "file://%s/wsdl/condorCollector.wsdl"%determine_path()
         self.condor_collector = Client(_collector_wsdl, cache=None, location=config.condor_collector_url)
         self.condor_collector_as_xml = Client(_collector_wsdl, cache=None,
                                               location=config.condor_collector_url, retxml=True)
@@ -335,8 +334,7 @@ class ResourcePool:
                     )
 
         else:
-            log.error("ResourcePool.setup doesn't know what to do with the"
-                    + "%s cloud_type" % cloud_type)
+            log.error("ResourcePool.setup doesn't know what to do with the %s cloud_type" % cloud_type)
             return None
 
 
@@ -358,7 +356,7 @@ class ResourcePool:
 
     def get_pool_info(self, ):
         """Print the name and address of every cluster in the resource pool."""
-        output = "Resource pool " + self.name + ":\n"
+        output = "Resource pool %s:\n" %self.name
         output += "%-15s  %-10s %-15s \n" % ("NAME", "CLOUD TYPE", "NETWORK ADDRESS")
         if len(self.resources) == 0:
             output += "Pool is empty..."
