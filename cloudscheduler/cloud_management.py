@@ -55,20 +55,20 @@ import cloudscheduler.utilities as utilities
 log = None
 log = logging.getLogger("cloudscheduler")
 
+"""Verify if stratuslab dependencies are available"""
+try:
+    from stratuslab.Image import Image
+    stratuslab_support = True
+except ImportError:
+    stratuslab_support = False
+    log.warning("Stratuslab dependencies are not available")
+
 ##
 ## CLASSES
 ##
 
 
-class ResourcePool:
-    
-    """Verify if stratuslab dependencies are available"""
-    try:
-        from stratuslab.Image import Image
-        __stratuslab_support = True
-    except ImportError:
-        __stratuslab_support = False
-        log.warning("Stratuslab dependencies are not available")
+class ResourcePool:    
     
     """Stores and organises a list of Cluster resources."""
     ## Instance variables
@@ -319,7 +319,7 @@ class ResourcePool:
                     key_name = get_or_none(config, cluster, "key_name"),
                     )
 
-        elif cloud_type == "StratusLab" and self.__stratuslab_support:
+        elif cloud_type == "StratusLab" and stratuslab_support:
             return stratuslabcluster.StratusLabCluster(name = cluster,
                     host = get_or_none(config, cluster, "host"),
                     cloud_type = get_or_none(config, cluster, "cloud_type"),
@@ -493,7 +493,7 @@ class ResourcePool:
                     if cluster.name in self.banned_job_resource[ami]:
                         continue
             
-            elif cluster.__class__.__name__ == "StratusLabCluster" and self.__stratuslab_support:
+            elif cluster.__class__.__name__ == "StratusLabCluster" and stratuslab_support:
                 # If not valid image file
                 if imageloc == "":
                     continue
@@ -1260,7 +1260,7 @@ class ResourcePool:
                     queue.append(value)
                     self.failures[job.req_imageloc].append(queue)
 
-            elif cluster.__class__.__name__ == 'StratusLabCluster' and self.__stratuslab_support:
+            elif cluster.__class__.__name__ == 'StratusLabCluster' and stratuslab_support:
                 # If not valid image file to download
                 if imageloc == "":
                     continue
